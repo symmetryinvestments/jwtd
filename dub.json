@@ -13,17 +13,9 @@
 			"name": "openssl",
 			"targetType": "library",
 			"dependencies" : {
-				"openssl": "~>1.1.4+1.0.1g"
+				"openssl": "~>3.2"
 			},
 			"versions": ["UseOpenSSL"]
-		},
-		{
-			"name": "openssl-1.1",
-			"targetType": "library",
-			"dependencies" : {
-				"openssl": "~>1.1.4+1.0.1g"
-			},
-			"versions": ["UseOpenSSL", "OpenSSL11"]
 		},
 		{
 			"name": "botan",
@@ -43,7 +35,7 @@
 			"mainSourceFile": "source/app.d",
 			"targetType": "executable",
 			"dependencies" : {
-				"openssl": "~>1.1.4+1.0.1g"
+				"openssl": "~>3.2"
 			},
 			"versions": ["UseOpenSSL"]
 		},

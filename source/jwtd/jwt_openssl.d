@@ -7,12 +7,11 @@ version(UseOpenSSL) {
 	import deimos.openssl.rsa;
 	import deimos.openssl.hmac;
 	import deimos.openssl.err;
+	import deimos.openssl.ecdsa;
 
 	import jwtd.jwt : JWTAlgorithm, SignException, VerifyException;
 
-	version(OpenSSL11) {
-		extern(C) nothrow void HMAC_CTX_reset(HMAC_CTX * ctx);
-	}
+	import std.exception : enforce;
 
 	EC_KEY* getESKeypair(uint curve_type, string key) {
 		EC_GROUP* curve;
@@ -166,24 +165,16 @@ version(UseOpenSSL) {
 		void sign_hs(const(EVP_MD)* evp, uint signLen) {
 			sign = new ubyte[signLen];
 
-			HMAC_CTX ctx;
-			version(OpenSSL11) {
-				scope(exit) HMAC_CTX_reset(&ctx);
-				HMAC_CTX_reset(&ctx);
-			}
-			else {
-				scope(exit) HMAC_CTX_cleanup(&ctx);
-				HMAC_CTX_init(&ctx);
-			}
-			if(0 == HMAC_Init_ex(&ctx, key.ptr, cast(int)key.length, evp, null)) {
-				throw new Exception("Can't initialize HMAC context.");
-			}
-			if(0 == HMAC_Update(&ctx, cast(const(ubyte)*)msg.ptr, cast(ulong)msg.length)) {
-				throw new Exception("Can't update HMAC.");
-			}
-			if(0 == HMAC_Final(&ctx, cast(ubyte*)sign.ptr, &signLen)) {
-				throw new Exception("Can't finalize HMAC.");
-			}
+			HMAC_CTX* ctx = HMAC_CTX_new();
+			enforce(ctx, "Can't allocate HMAC context.");
+			scope (exit) HMAC_CTX_free(ctx);
+
+			enforce(0 != HMAC_Init_ex(ctx, key.ptr, cast(int)key.length, evp, null),
+				"Can't initialize HMAC context.");
+			enforce(0 != HMAC_Update(ctx, cast(const(ubyte)*)msg.ptr, msg.length),
+				"Can't update HMAC.");
+			enforce(0 != HMAC_Final(ctx, cast(ubyte*)sign.ptr, &signLen),
+				"Can't finalize HMAC.");
 		}
 
 		void sign_rs(ubyte* hash, int type, uint len, uint signLen) {
